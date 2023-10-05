@@ -1,12 +1,23 @@
 % !TeX root = ../sustechthesis-example.tex
 
+
+
+
+
+
+
+
 \chapter{补充内容}
 
 在附录里面我会写一些控制相关的一些数学概念的理解。
 
+% ==============================================================================
 \section{拉格朗日乘子法}
 
 在机械狗的运动规划中，机械狗质心的运动是通过求解空间中$x, y, z$方向上的五次曲线得到的。这个五次曲线是在一些列约束条件下的最优运动结果。这个结果是通过求解QP(二次优化)问题得到的。实际上所谓的QP问题的一种形式就是之前高数上很熟悉的`拉格朗日乘子法（Lagrange Multiplier）'。下面就对这部分知识进行总结，这部分内容主要参考\href{https://juejin.cn/post/6956879956299218974}{这个博客}。
+
+
+
 
 \subsection{优化问题}
 
@@ -32,6 +43,9 @@
 
 对于第三类优化问题，常使用的求解方式是\emph{KKT}条件。同样地，把所有等式、不等式约束条件与$f(x)$写成一个式子，也叫拉格朗日函数，系数也称为拉格朗日乘子。通过一些条件可以求出最优值的必要条件，这个条件称为KKT条件。
 
+
+
+
 \subsection{拉格朗日乘子法}
 对于等式约束，我们可以通过一个拉格朗日系数$a$把等式约束和目标函数组合成一个拉格朗日函数：
 \begin{align}
@@ -45,6 +59,9 @@
 \end{enumerate}
 
 通过联立求解上面两个条件等式可以求得候选的最优值结果$\mathbfit{a},\mathbfit{x}$的候选值，然后验证$\mathbfit{x}$求得最优值（如果是如函数可以保证是最优解）。
+
+
+
 
 \subsection{KKT条件}
 对于含有不等式约束的优化问题，常用的方法是KKT条件同样像等式约束一样将所有的不等约束也添加到拉格朗日函数中谢伟一个式子：
@@ -62,30 +79,39 @@ KKT条件指出最优值必须满足一下三个条件：
 求取这三个等式之后就能得到候选最优值。其中第三个式子非常有趣，因为$\mathbfit{g}(\mathbfit{x})\leq 0$，如果要满足这个等式，必须$\mathbfit{a}=0$或者$\mathbfit{g}(\mathbfit{x})= 0$. 这是\emph{SVM}的很多重要性质的来源，如支持向量的概念。
 
 
+
+
+
+
+
+% ==============================================================================
 \section{二次规划问题}
 
 二次规划(QP, Quadratic Programming)定义：目标函数为二次函数，约束条件为线性约束，属于最简单的一种非线性规划。这部分内容主要参考\href{https://zhuanlan.zhihu.com/p/375762164}{这个博客}。
+
+
+
 
 \subsection{等式约束的QP问题}
 
 一个标准的等式约束QP问题模型如下：
 \begin{align}
   &min \quad \frac{1}{2}\mathbfit{x}^T\mathbfit{H}\mathbfit{x}+\mathbfit{g}^T\mathbfit{x} \notag\\
-  &s.t. \quad \mathbfit{a}_i^T\mathbfit{x}=\mathbfit{b}_i, \quad i = 1, 2, \dots, m
+  &s.t. \quad \mathbfit{a}_i^T\mathbfit{x}=b_i, \quad i = 1, 2, \dots, m
 \end{align}
 
 其中$\mathbfit{H}$是由二阶导构成的Hessian矩阵，$\mathbfit{g}^T\mathbfit{x}$是由梯度构成的Jacobi矩阵，这里的向量都是列向量，$\mathbfit{g}^T\mathbfit{x}$表示转置成行向量。
 
 其对应的拉格朗日函数为:
 \begin{align}
-  \mathbfit{L}(\mathbfit{x},\mathbfit{\lambda})=\frac{1}{2}\mathbfit{x}^T\mathbfit{H}\mathbfit{x}+\mathbfit{g}^T\mathbfit{x}+\sum_{i=1}^{m}\mathbfit{\lambda}_i(\mathbfit{a}_i^T\mathbfit{x}-\mathbfit{b}_i)
+  \mathbfit{L}(\mathbfit{x},\mathbfit{\lambda})=\frac{1}{2}\mathbfit{x}^T\mathbfit{H}\mathbfit{x}+\mathbfit{g}^T\mathbfit{x}+\sum_{i=1}^{m}\lambda_i(\mathbfit{a}_i^T\mathbfit{x}-b_i)
 \end{align}
 
 满足KKT条件，即满足：
 \begin{align}
   \begin{cases}
-    \frac{\partial \mathbfit{L}}{\partial \mathbfit{x}}=\mathbfit{H}\mathbfit{x}+\mathbfit{g}+\sum_{i=1}^{m}\mathbfit{\lambda}_i\mathbfit{a}_i=0\\
-    \frac{\partial \mathbfit{L}}{\partial \mathbfit{\lambda}_i}=\mathbfit{a}_i^T\mathbfit{x}-\mathbfit{b}_i=0, \quad i = 1, 2, \dots, m
+    \frac{\partial \mathbfit{L}}{\partial \mathbfit{x}}=\mathbfit{H}\mathbfit{x}+\mathbfit{g}+\sum_{i=1}^{m}\lambda_i\mathbfit{a}_i=0\\
+    \frac{\partial \mathbfit{L}}{\partial \lambda_i}=\mathbfit{a}_i^T\mathbfit{x}-b_i=0, \quad i = 1, 2, \dots, m
   \end{cases}
 \end{align}
 
@@ -106,7 +132,7 @@ KKT条件指出最优值必须满足一下三个条件：
     0 & 0 &\dots & \lambda_m
   \end{bmatrix}, \quad
   \mathbfit{a}^T=\begin{bmatrix}
-    a_1^T \\ a_2^T \\ \vdots \\ a_m^T
+    \mathbfit{a}_1^T \\ \mathbfit{a}_2^T \\ \vdots \\ \mathbfit{a}_m^T
   \end{bmatrix}, \quad
   \mathbfit{b}=\begin{bmatrix}
     b_1 \\ b_2 \\ \vdots \\ b_m 
@@ -115,20 +141,23 @@ KKT条件指出最优值必须满足一下三个条件：
 
 这是一个线性方程组，易于求解，KKT方程组的解$\mathbfit{x}^*, \mathbfit{\lambda}^*$，即为优化模型的解。
 
+
+
+
 \subsection{不等式约束的QP问题}
 
 一个标准的等式不等式联合约束QP问题模型如下：
 \begin{align}
   &min \quad \frac{1}{2}\mathbfit{x}^T\mathbfit{H}\mathbfit{x}+\mathbfit{g}^T\mathbfit{x} \notag\\
-  &s.t. \quad \mathbfit{a}_i^T\mathbfit{x}=\mathbfit{b}_i, \quad i \in \mathbb{E}\\
-  &\quad \mathbfit{h}_j^T\mathbfit{x}\leq\mathbfit{t}_j, \quad j \in \mathbb{I} 
+  &s.t. \quad \mathbfit{a}_i^T\mathbfit{x}=b_i, \quad i \in \mathbb{E}\\
+  &\quad \mathbfit{h}_j^T\mathbfit{x}\leq t_j, \quad j \in \mathbb{I} 
 \end{align}
 
 其中$\mathbfit{H}$是由二阶导构成的Hessian矩阵，$\mathbfit{g}^T\mathbfit{x}$是由梯度构成的Jacobi矩阵，这里的向量都是列向量，$\mathbfit{g}^T\mathbfit{x}$表示转置成行向量。$i \in \mathbb{E}$表示$m$个等式约束集合，$i \in \mathbb{I}$表示$n$个不等式约束集合。下面介绍两种不等式约束条件下的QP问题求解方案。
 \subsubsection{内点法}
 模型的拉格朗日函数为：
 \begin{align}
-  \mathbfit{L}(\mathbfit{x},\mathbfit{\lambda}, \mathbfit{\mu})=\frac{1}{2}\mathbfit{x}^T\mathbfit{H}\mathbfit{x}+\mathbfit{g}^T\mathbfit{x}+\sum_{i=1}^{m}\mathbfit{\lambda}_i(\mathbfit{a}_i^T\mathbfit{x}-\mathbfit{b}_i)+\sum_{j=1}^{n}\mathbfit{\mu}_j(\mathbfit{h}_j^T\mathbfit{x}-\mathbfit{t}_j)
+  \mathbfit{L}(\mathbfit{x},\mathbfit{\lambda}, \mathbfit{\mu})=\frac{1}{2}\mathbfit{x}^T\mathbfit{H}\mathbfit{x}+\mathbfit{g}^T\mathbfit{x}+\sum_{i=1}^{m}\lambda_i(\mathbfit{a}_i^T\mathbfit{x}-b_i)+\sum_{j=1}^{n}\mu_j(\mathbfit{h}_j^T\mathbfit{x}-t_j)
 \end{align}
 
 \begin{note}
@@ -137,22 +166,22 @@ KKT条件指出最优值必须满足一下三个条件：
 以原始对偶内点法为例，加入少量$\mathbfit{\tau}$扰动后KKT条件为：
 \begin{align}
   \begin{cases}
-    \frac{\partial \mathbfit{L}}{\partial \mathbfit{x}}=\mathbfit{H}\mathbfit{x}+\mathbfit{g}+\sum_{i=1}^{m}\mathbfit{\lambda}_i\mathbfit{a}_i+\sum_{j=1}^{n}\mathbfit{\mu}_j\mathbfit{h}_j=0\\
-    \frac{\partial \mathbfit{L}}{\partial \mathbfit{\lambda}_i}=\mathbfit{a}_i^T\mathbfit{x}-\mathbfit{b}_i=0, \quad i = 1, 2, \dots, m\\
-    \mathbfit{h}_j\mathbfit{x}\leq\mathbfit{t}_j\\
-    \mathbfit{\mu}_j(\mathbfit{h}_j\mathbfit{x}-\mathbfit{t}_j)+\mathbfit{\tau}_j=0\\
-    \mathbfit{\mu}_j\geq 0, \quad j= 1, 2, \cdots, n
+    \frac{\partial \mathbfit{L}}{\partial \mathbfit{x}}=\mathbfit{H}\mathbfit{x}+\mathbfit{g}+\sum_{i=1}^{m}\lambda_i\mathbfit{a}_i+\sum_{j=1}^{n}\mu_j\mathbfit{h}_j=0\\
+    \frac{\partial \mathbfit{L}}{\partial \lambda_i}=\mathbfit{a}_i^T\mathbfit{x}-b_i=0, \quad i = 1, 2, \dots, m\\
+    \mathbfit{h}_j^T\mathbfit{x}\leq t_j\\
+    \mu_j(\mathbfit{h}_j^T\mathbfit{x}-t_j)+\tau_j=0\\
+    \mu_j\geq 0, \quad j= 1, 2, \cdots, n
   \end{cases}
 \end{align}
 
-为了更快地检查解是否在约束空间内，我们在不等式方程组引入了松弛变量$\mathbfit{s}_j=\mathbfit{t}_j-\mathbfit{h}_j\mathbfit{x}$，因为判断$\mathbfit{s}_j\leq0$要比判断$\mathbfit{h}_j\mathbfit{x}\leq\mathbfit{t}_j$方便的多，这样一来上式变为：
+为了更快地检查解是否在约束空间内，我们在不等式方程组引入了松弛变量$s_j=t_j-\mathbfit{h}_j^T\mathbfit{x}$，因为判断$s_j\leq0$要比判断$\mathbfit{h}_j^T\mathbfit{x}\leq t_j$方便的多，这样一来上式变为：
 \begin{align}
   \begin{cases}
-    \frac{\partial \mathbfit{L}}{\partial \mathbfit{x}}=\mathbfit{H}\mathbfit{x}+\mathbfit{g}+\sum_{i=1}^{m}\mathbfit{\lambda}_i\mathbfit{a}_i+\sum_{j=1}^{n}\mathbfit{\mu}_j\mathbfit{h}_j=0\\
-    \frac{\partial \mathbfit{L}}{\partial \mathbfit{\lambda}_i}=\mathbfit{a}_i^T\mathbfit{x}-\mathbfit{b}_i=0, \quad i = 1, 2, \dots, m\\
-    \mathbfit{h}_j\mathbfit{x}+\mathbfit{s}_j=\mathbfit{t}_j\\
-    \mathbfit{\mu}_j(\mathbfit{h}_j\mathbfit{x}-\mathbfit{t}_j)+\mathbfit{\tau}_j=0\to \mathbfit{\mu}_j\mathbfit{s}_j-\mathbfit{\tau}_j=0\\
-    \mathbfit{\mu}_j,\mathbfit{s}_j\geq 0, \quad j= 1, 2, \cdots, n
+    \frac{\partial \mathbfit{L}}{\partial \mathbfit{x}}=\mathbfit{H}\mathbfit{x}+\mathbfit{g}+\sum_{i=1}^{m}\lambda_i\mathbfit{a}_i+\sum_{j=1}^{n}\mu_j\mathbfit{h}_j=0\\
+    \frac{\partial \mathbfit{L}}{\partial \lambda_i}=\mathbfit{a}_i^T\mathbfit{x}-b_i=0, \quad i = 1, 2, \dots, m\\
+    \mathbfit{h}_j^T\mathbfit{x}+s_j=t_j\\
+    \mu_j(\mathbfit{h}_j^T\mathbfit{x}-t_j)+\tau_j=0\to \mu_j s_j-\tau_j=0\\
+    \mu_j, s_j\geq 0, \quad j= 1, 2, \cdots, n
   \end{cases}
 \end{align}
 
@@ -160,13 +189,15 @@ KKT条件指出最优值必须满足一下三个条件：
 \begin{align}
   \mathbfit{F}(\mathbfit{x},\mathbfit{s},\mathbfit{\lambda},\mathbfit{\mu})=\begin{bmatrix}
     \mathbfit{H}\mathbfit{x}+\mathbfit{g}+\mathbfit{\lambda}\mathbfit{a}+\mathbfit{\mu}\mathbfit{h}\\
-    \mathbfit{h}^T\mathbfit{x}+\mathbfit{s}-\mathbfit{t}\\
     \mathbfit{a}^T\mathbfit{x}-\mathbfit{b}\\
+    \mathbfit{h}^T\mathbfit{x}+\mathbfit{s}-\mathbfit{t}\\
     \mathbfit{\mu}\mathbfit{s}-\mathbfit{\tau}\mathbfit{1}
   \end{bmatrix} = 0
 \end{align}
 \begin{note}
-  不知道这里$\tau$后面的那个$1$是什么意思？难道是笔误？
+  不知道这里添加的扰动$\tau$后面的那个$1$是什么意思？难道是笔误？
+  
+  理论上第一行是关于$\mathbfit{x}$的偏导项，第二项和第三项分别是关于等式约束和不等式约束引入的拉格朗日乘子的偏导项。最后一项$\mathbfit{\mu}\mathbfit{s}-\mathbfit{\tau}\mathbfit{1}=0$的含义不是很清楚是什么意思？
 \end{note}
 其中：
 \begin{align}
@@ -177,7 +208,7 @@ KKT条件指出最优值必须满足一下三个条件：
     0 & 0 &\dots & \lambda_m
   \end{bmatrix}, \quad
   \mathbfit{a}^T=\begin{bmatrix}
-    a_1^T \\ a_2^T \\ \vdots \\ a_m^T
+    \mathbfit{a}_1^T \\ \mathbfit{a}_2^T \\ \vdots \\ \mathbfit{a}_m^T
   \end{bmatrix}, \quad
   \mathbfit{b}=\begin{bmatrix}
     b_1 \\ b_2 \\ \vdots \\ b_m 
@@ -189,7 +220,7 @@ KKT条件指出最优值必须满足一下三个条件：
     0 & 0 &\dots & \mu_m
   \end{bmatrix}, \quad
   \mathbfit{h}^T=\begin{bmatrix}
-    h_1^T \\ h_2^T \\ \vdots \\ h_n^T
+    \mathbfit{h}_1^T \\ \mathbfit{h}_2^T \\ \vdots \\ \mathbfit{h}_n^T
   \end{bmatrix}, \quad
   \mathbfit{t}=\begin{bmatrix}
     t_1 \\ t_2 \\ \vdots \\ t_n
@@ -231,4 +262,13 @@ KKT条件指出最优值必须满足一下三个条件：
   这下终于清楚论文里面所谓的二次规划问题具体在说什么了。刚巨额这个过程放在编程上，想要实现也不是个容易的事情。除此之外，实现了的接口用起来对里面的各个参数选择也是个有挑战大问题，可能要花费较长的时间来调整。2023-10-05 23:13:53，竟然这么快又11点多了！好在我下午还是回来了，不然这花功夫的笔记进度要延后许久呀。
 \end{note}
 
+
+
+
 \subsubsection{积极集法}
+
+积极集法属于图形法在QP问题上的扩展，其通过求解有限个等式约束QP问题来解决一般约束下的QP模型。当不等式约束条件不多时，也是一种高效的求解QP算法。
+积极集法首先将QP中所有的不等式约束视为等式约束。把不等式约束直接转成等式约束当然是存在问题的，不等式约束存在有效和无效两种情况，而有效无效很容易通过该不等式对应的拉格朗日乘子进行判断。不等式约束的互补松弛条件告诉我们，不等式对应的拉格朗日乘子应当满足$\lambda_i\geq 0$。
+\begin{note}
+  $\lambda_i\geq 0$这个松弛条件哪里提到的？得查一查。
+\end{note}
