@@ -1,0 +1,106 @@
+% !TeX root = ../sustechthesis-example.tex
+
+\chapter{机械狗的运动模型}
+
+\section{机械狗运动模型描述}
+
+机器人与环境接触的机械系统的运动模型描述方程可以描述如下\cite{zhangkun1994}：
+\begin{align}
+    {\mathbfit M}({\mathbfit q})\dot{\mathbfit u} + {\mathbfit h}({\mathbfit q}, {\mathbfit u}) =  {\mathbfit S}^T{\mathbfit \tau} + {\mathbfit J}_S^T {\mathbfit \lambda}
+\end{align}
+这其中${\mathbfit q}$是一个描述机器人主体及各个节点的广义位置矢量：
+\begin{align}
+    {\mathbfit q}= \begin{bmatrix}_I {\mathbfit r}_{IB} \\ {\mathbfit q}_{IB} \\ {\mathbfit q}_j\end{bmatrix} \in SE(3)\times {\mathbb R}^{n_j}
+\end{align}
+
+它里面$_I {\mathbfit r}_{IB} \in {\mathbb R}^{3}$是机器人主体相对于惯性系的三维位置矢量；${\mathbfit q}_{IB} \in SO(3)$是机器人主体相对于惯性系的转动描述，用哈密顿单位四元数表示的；${\mathbfit q}_j \in {\mathbb R}^{n_j}$是一个储存机器人所有节点角度的$n_j$维矢量。
+
+\begin{note}
+    不过我还是不太清楚$\mathbfit q$也就是$SE(3)\times {\mathbb R}^{n_j}$到底是一个什么形状的矩阵？单纯看表达的话他应该是一个$3+4+n_j$维的矢量，包含了整个机器人的所有位置有关的状态信息。它似乎不用直接参与运算，因此可以先放一放，重要的是$SE(3)\times {\mathbb R}^{n_j}$的含义到底是什么需要好好理解一下。
+\end{note}
+
+这其中${\mathbfit u}$是一个描述机器人主体及各个节点的广义速度矢量：
+\begin{align}
+    {\mathbfit u}= \begin{bmatrix}_I{\mathbfit v}_B \\ _B{\mathbfit \omega}_{IB} \\ \dot {\mathbfit q}_j \end{bmatrix} \in {\mathbb R}^{n_u} 
+\end{align}
+
+它里面的$_I{\mathbfit v}_B$描述了机器人主体相对于惯性系的速度；$_B{\mathbfit \omega}_{IB}$描述了机器人主体相对于自身的角速度；$\dot {\mathbfit q}_j$描述了机器人的各个关节转动的速度。
+这其中${\mathbfit M}$是一个关于机器人整体的质量矩阵，它是一个$n_u \times n_u$的矩阵： 
+\begin{align}
+    {\mathbfit M} \in {\mathbb R}^{n_u \times n_u}
+\end{align}
+
+这个质量矩阵的具体数值跟机器人的机械系统的状态（各个节点的位置${\mathbfit q}$）相关，可以通过通用的方式计算出它的表达式。实际计算的时候只需要带入${\mathbfit q}$的值，就可以计算出${\mathbfit M}$矩阵的各个元素具体数值。
+这其中${\mathbfit h}$是一个跟机器人的机械位置和速度都有关的量，包含了机械系统产生的克里奥利力、离心力和重力的作用，它是一个$n_u$维的矢量：
+\begin{align}
+    {\mathbfit h} \in {\mathbb R}^{n_u}
+\end{align}
+
+\begin{note}
+    这个${\mathbfit h}$的具体计算方式我现在还不是很清楚。
+\end{note}
+
+这其中${\mathbfit S}$是一个选择矩阵，可以用来选择整个公式中哪些自由度被激活，它是一个$n_{\tau} \times n_u$的矩阵：
+\begin{align}
+    {\mathbfit S} = \begin{bmatrix}{\mathbfit 0}_{n_{\tau} \times (n_u - n_{\tau})} & {\mathbb I}_{n_{\tau} \times n_{\tau}}\end{bmatrix} \in {\mathbb R}^{n_{\tau} \times n_u} 
+\end{align}
+
+它其中包含的参数$n_{\tau}$表示被激活的自由度数量，如果机器人的所有自由度都被激活，则$n_{\tau} = n_j$。
+这其中${\mathbfit \tau}$是机器人各个关节的电机提供的扭矩，它是一个$n_j$维的向量：
+\begin{align}
+    {\mathbfit \tau} \in {\mathbb R}^{n_j} 
+\end{align}
+
+它的节点成员是否产生作用受到${\mathbfit S}^T$矩阵的选择。
+这其中${\mathbfit J}_S$是一些列雅可比矩阵的集合：
+\begin{align}
+    J_S=\begin{bmatrix}J^T_{C_1} & ... & J^T_{C_{n_c}}\end{bmatrix}^T  \in {\mathbb R}^{3n_c\times n_u}
+\end{align}
+
+它是接触点的支撑力${\mathbfit \lambda}$向节点力转换的矩雅可比矩阵，包含了$n_c$个雅可比矩阵，$n_c$为接触地面的肢体个数。
+
+
+\section{质心运动(CoM Motion)问题表述}
+每一个坐标方向的质心运动规划都被描述成一个系列的五次样条。比如沿着x方向的其中第$i-th$曲线可以描述为：
+\begin{align}
+    x(t) = & a_{i5}^x t^5 +  a_{i4}^x t^4 + a_{i3}^x t^3 +  a_{i2}^x t^52+  a_{i1}^x t^1 +  a_{i0}^x t^0 \notag\\
+    = & \begin{bmatrix}t^5 & t^4 & t^3 & t^2 & t^1 & t^0\end{bmatrix} \notag\\ 
+    & \cdot \begin{bmatrix}a_{i5} & a_{i4} & a_{i3} & a_{i2} & a_{i1} & a_{i0}\end{bmatrix} \notag\\
+    = & {\mathbfit \eta}^T(t){\mathbfit \alpha}_i^x
+\end{align}
+
+ 
+这其中$t\in [t, t+\Delta t_i]$是第$i$个曲线段前所有$(i-1)$个曲线持续时间长度的总和，$\Delta t_i$是第$i$个曲线持续的时长。
+基于$(2)$的关于位置的表述，可以很容易地将关于速度和加速度的表述写出来：
+\begin{align}
+\dot x(t) = \dot {\mathbfit \eta}^T(t){\mathbfit \alpha}_i^x \\
+\ddot x(t) = \ddot {\mathbfit \eta}^T(t) {\mathbfit \alpha}_i^x 
+\end{align}
+
+这其中：
+\begin{align}
+\dot {\mathbfit \eta}^T(t) =  \begin{bmatrix}5t^4 & 4t^3 & 3t^2 & 2t^1 & 1 & 0\end{bmatrix}^T\\
+\ddot {\mathbfit \eta}^T(t) =  \begin{bmatrix}20t^3 & 12t^2 & 6t^t & 2 & 0 & 0\end{bmatrix}^T
+\end{align}
+
+对于质心在$y,\, z$方向上的描述是一样的。每一条质心曲线都由$x,y,z$三部分分量${\mathbfit \alpha}_i = \begin{bmatrix}{{\mathbfit \alpha}_i^x}^T & {{\mathbfit \alpha}_i^y}^T & {{\mathbfit \alpha}_i^z}^T\end{bmatrix}^T$组成，可以将$n_s$条质心曲线的$3n_s$条曲线参数写到一起，优化的参数矢量可以写成：${\mathbfit \alpha} = \begin{bmatrix}{\mathbfit \alpha}_0^T & ...& {\mathbfit \alpha}_i^T &...& {\mathbfit \alpha}_{n_s}^T\end{bmatrix}^T$。
+这样一来，质心的位置可以表示为：
+\begin{align}
+    {\mathbfit p}_{CoM}(t) = {\mathbfit T}(t){\mathbfit \alpha}_i \in{\mathbb R}^3
+    , \quad
+    {\mathbfit T}(t) = 
+    \begin{bmatrix}
+    {\mathbfit \eta}^T(t) & 0 & 0 \\
+    0 & {\mathbfit \eta}^T(t) & 0 \\
+    0 & 0 & {\mathbfit \eta}^T(t)
+    \end{bmatrix}
+\end{align}
+
+同样质心的速度和位置也可以得到了：
+
+\begin{align}
+    \dot {\mathbfit p}_{CoM}(t) = \dot {\mathbfit T}(t){\mathbfit \alpha}_i \in{\mathbb R}^3 \\
+    \ddot {\mathbfit p}_{CoM}(t) = \ddot {\mathbfit T}(t){\mathbfit \alpha}_i \in{\mathbb R}^3
+\end{align}
+
+

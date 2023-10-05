@@ -1,0 +1,110 @@
+% !TeX root = ../sustechthesis-example.tex
+
+\chapter{分层次优化计算}
+
+
+\section{分层次优化计算}
+${\mathbfit \xi}_d$
+下面的控制方法采用接触力控制
+
+\subsection{运动方程}
+\begin{align}
+    \begin{bmatrix}{\mathbfit M}_{fb} & - {\mathbfit J}_{s_{fb}}^T \end{bmatrix} {\mathbfit \xi}_d = - {\mathbfit h}_{fb}
+\end{align}
+
+\begin{note}
+    $XXX_{fb}$: 下标的意思是浮动的主体-'floating base'
+\end{note}
+
+\begin{enumerate}
+    \item ${\mathbfit \xi}_d$是一个一个$n_u+n_c$行$1$列的向量： ${\mathbfit \xi}_d = \begin{bmatrix} {\mathbfit u}_d^T & {\mathbfit \lambda}_d^T \end{bmatrix} \in {\mathbb R}^{n_u+n_c}$，其中:
+    \begin{enumerate}
+        \item ${\mathbfit u}_d^T$是目标节点的加速度；
+        \item ${\mathbfit \lambda}_d^T$是目标接触力；
+    \end{enumerate}
+    \item ${\mathbfit M}_{fb}$是复合型惯性矩阵的前六行；啥是复合惯性矩阵？
+    \item ${\mathbfit J}_{s_{fb}}^T$是雅克比阵的前六行，它将接触力转换到节点的扭矩；
+    \item ${\mathbfit h}_{fb}$是非线性项的前六行，包括克里奥利力、离心力和重力项；
+\end{enumerate}
+\subsection{接触部分运动约束}
+控制器找到的解决方案不应违反 (2) 中定义的接触约束。因此，我们通过设置在接触点施加空加速度:
+\begin{align}
+    \begin{bmatrix} {\mathbfit J}_s & {\mathbfit 0}_{3n_c \times 3n_c}\end{bmatrix} {\mathbfit \xi}_d = - \dot {\mathbfit J}_s {\mathbfit u} 
+\end{align}
+
+哦~它将${\mathbfit \xi}_d$带进去计算后就得到了：${\mathbfit J}_s  {\mathbfit \xi}_d  = - \dot {\mathbfit J}_s {\mathbfit u}$其实就是公式$(2)$的第二个式子${\mathbfit J}_s  {\mathbfit \xi}_d  + \dot {\mathbfit J}_s {\mathbfit u} = 0$。
+
+\subsection{接触力和扭矩限制}
+
+\begin{align}
+(_I{\mathbfit h} - {_I{\mathbfit n}}_{\mu})^T {_I{\mathbfit \lambda}}_k\leq & 0 \\
+- (_I{\mathbfit h} + {_I{\mathbfit n}}_{\mu})^T {_I{\mathbfit \lambda}}_k\leq & 0 \\
+(_I{\mathbfit l} - {_I{\mathbfit n}}_{\mu})^T {_I{\mathbfit \lambda}}_k\leq & 0 \\
+- (_I{\mathbfit l} + {_I{\mathbfit n}}_{\mu})^T {_I{\mathbfit \lambda}}_k\leq & 0
+\end{align}
+
+$_In$是接触面的法向量；$\mu$是摩擦系数；有了这两个再乘上受力$_I\lambda$，就可以得出最大静摩擦力$_I{\mathbfit n}_{\mu}^T \lambda$。实际在接触点平行于地面方向的两个分力$_I{\mathbfit h}$，$_I{\mathbfit l}$在正反方向上都不应该比这个值大，否则就会发生滑动。这就是公式5约束的由来。
+\begin{align}
+    {\mathbfit \tau}_{min}-{\mathbfit h}_j 
+    \leq \begin{bmatrix} {\mathbfit M}_j & -{\mathbfit J}^T_{s_j} \end{bmatrix} 
+    \leq {\mathbfit \tau}_{max}-{\mathbfit h}_j 
+\end{align}
+
+这里的${\mathbfit h}_j$应该就是科里奥利力那一堆东西。
+而$\begin{bmatrix} {\mathbfit M}_j & -{\mathbfit J}^T_{s_j} \end{bmatrix}$就是加速度力${\mathbfit M}_j  \dot{\mathbfit u}_d^T$和传递力$-{\mathbfit J}^T_{s_j} {\mathbfit \lambda}_d^T$两项的和。它们计算的结果就是电机提供的扭矩力${\mathbfit \tau}$克服完${\mathbfit h}({\mathbfit q}, {\mathbfit u})$剩下的力。
+
+\subsection{运动跟随}
+为了能跟随浮动主体和摆动腿的目标运动。
+我们通过实现具有前馈参考加速度和运动相关状态反馈状态的操作空间控制器来约束关节加速度。
+对于主体的线性运动：
+\begin{align}
+    \begin{bmatrix}
+    _C{\mathbfit J}_P & {\mathbfit 0}
+    \end{bmatrix} 
+    {\mathbfit \xi}_d = _C\ddot {\mathbfit r}_{IB}^d 
+    + {\mathbfit k}_D^{pos}(_C \dot{\mathbfit r}_{IB}^d-_C{\mathbfit v}_B) 
+    + {\mathbfit k}_P^{pos}(_C{\mathbfit r}_{IB}^d-_C{\mathbfit r}_B)
+\end{align}
+
+对于主体的角度运动：
+\begin{align}
+    \begin{bmatrix}
+    _C{\mathbfit J}_R & {\mathbfit 0}
+    \end{bmatrix} 
+    {\mathbfit \xi}_d = 
+    - {\mathbfit k}_D^{ang} {_C{\mathbfit \omega}}_{B}
+    + {\mathbfit k}_P^{ang}({\mathbfit q}_{CB}^d \Xi {\mathbfit q}_{CB})
+\end{align}
+
+* 雅可比矩阵$_C{\mathbfit J}_P$和$_C{\mathbfit J}_R$是与`控制坐标系C（这是一个与地形局部估计和机器人航向方向对齐的帧）`中表达的基相关的平移和旋转雅可比矩阵。
+
+* ${\mathbfit \Xi}$这个算子产生欧拉向量，表示期望姿态$q^d_{CB}$和估计姿态$q_{CB}$之间的相对方向。
+
+* 这里面${\mathbfit k}_P^{pos}, {\mathbfit k}_D^{pos}, {\mathbfit k}_P^{ang}, {\mathbfit k}_D^{ang}$是用来控制增益的对角正定矩阵。
+
+* 参考的运动$_C{\mathbfit r}_{IB}$和它的导数是运动规划的结果。
+
+\subsection{接触力最小化}
+可以通过下面的方法将接触力设置为最小值：
+\begin{align}
+    \begin{bmatrix}
+    {\mathbfit 0}_{3n_c \times n_u} & {\mathbb I}_{3n_c \times 3n_c}
+    \end{bmatrix}
+    {\mathbfit \xi}_d = 0
+\end{align}
+
+\subsection{计算电机扭矩}
+如果给定了一个优化的节点运动和接触力，${\mathbfit \xi}_d = \begin{bmatrix}
+\dot {\mathbfit u}_d^T & {\mathbfit \lambda}_d^T
+\end{bmatrix}^T$
+我们可以用以下公式计算各个电机的扭矩：
+$${\mathbfit \tau}_d = \begin{bmatrix} {\mathbfit M}_j & -{\mathbfit J}^T_{s_j}\end{bmatrix} {\mathbfit \xi}_d + {\mathbfit h}_j$$
+其中${\mathbfit M}_j,\, -{\mathbfit J}^T_{s_j}, \, {\mathbfit h}_j$在公式$(6)$已中定义。
+\begin{note}
+    因此，所有规划的目的就是给出节点的运动加速度$\dot{\mathbfit u}_d^T$和接触力${\mathbfit \lambda}_d^T$。
+\end{note}
+
+\section{支撑多边形序列生成}
+>这部分的详细描述要参考文献2。
+
+

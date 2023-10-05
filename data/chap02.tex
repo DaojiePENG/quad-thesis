@@ -1,0 +1,175 @@
+% !TeX root = ../sustechthesis-example.tex
+
+\chapter{质心运动优化}
+\section{质心运动优化}
+
+机械狗的质心运动天然受到多种条件约束。因此，我们将质心运动规划问题描述为一个非线性优化问题，它的目标是在相等约束${\mathbfit c}({\mathbfit \xi})$和不等约束${\mathbfit h}({\mathbfit \xi})$的条件下最小化一个通用的成本函数${\mathbfit f}({\mathbfit \xi})$。解决这个问题的数值方法被称作为顺序二次规划算法((SQP) algorithm)，这个算法要求计算约束条件和成本函数的雅可比和海森矩阵。这个优化算法会以局部运动的踱步周期$\tau$为时间间隔，不断地重新计算新的结果。
+下面的内容将介绍一些用到的成本函数和约束条件.
+
+\subsection{成本函数：最小化运动规划结果的加速度}
+通过计算样条段的二次成本可以得到：
+\begin{align}
+    {\mathbfit Q}_k^{acc} = 
+    \begin{bmatrix}
+    (400/7)\Delta t_k^7 & 40\Delta t_k^6 & 24\Delta t_k^5 & 10\Delta t_k^4 & \\
+    40\Delta t_k^6 & 28.8\Delta t_k^5 & 18\Delta t_k^4 & 8\Delta t_k^3 & \\
+    24\Delta t_k^5 & 18\Delta t_k^4 & 12\Delta t_k^3 & 6\Delta t_k^2 & {\mathbfit 0}_{4\times 2}\\
+    10\Delta t_k^4 & 8\Delta t_k^3 & 6\Delta t_k^2 & 4\Delta t_k &\\
+     & {\mathbfit 0}_{2\times 4} & & & {\mathbfit 0}_{2\times 2}
+    \end{bmatrix}
+\end{align}
+
+
+相应的${\mathbfit c}_k^{acc}=0$。$\Delta t_k$是第$k$个曲线段以秒为单位的持续时间。
+${\mathbfit Q}_k^{acc}$是通过平方和积分CoM在第$k$样条的持续时间上的加速度得到。${\mathbfit Q}_k^{acc}$被添加为整个成本函数的Hessian的子矩阵。
+\begin{note}
+    （${\mathbfit Q}_k^{acc}$到底是成本函数还是Hessian矩阵？它们之间有什么关系？有必要了解一下Hessian矩阵去。）
+\end{note}
+
+最终期望的位置计算为参考高级线性速度$v_{ref}$和角速度$\omega_{ref}$的$z$分量和优化时间间隔$\tau$的函数。在以上参数相对于优化时间间隔$\tau$变化很缓慢的情况下，最后的位置可以计算为：
+\begin{align}
+    {\mathbfit p}_{final} = {\mathbfit p}_{init} + {\mathbfit R}(\tau \hat {\mathbfit \omega}_z)(\tau {\mathbfit v}_{ref})
+\end{align}
+
+这里面第一项${\mathbfit p}_{init}$是前一时刻的位置，第二项是当前时刻的位移$\tau {\mathbfit v}_{ref}$乘上一个旋转矩阵${\mathbfit R}(\tau \hat {\mathbfit \omega}_z)=\begin{bmatrix}0 & 0 & {\mathbfit \omega}_{ref_z}\end{bmatrix}^T$。
+路径正则化${\mathbfit  \pi}$。$\mathbfit \pi$的初始位置计算为优化视界$\tau$上平均的足迹中心，假设脚要么接触，要么以恒定的速度移动。最终位置是通过参考高级速度计算的，如参考文献（7）所示。
+
+我们将初始速度设置为参考速度$v_{ref}$ ，最后一个速度与运动计划结束时预测的躯干方向对齐。${\mathbfit  \pi}$的初始和最终加速度设置为零。${\mathbfit  \pi}$的初始和最终高度设置为用户指定的参考值。（这个${\mathbfit  \pi}$到底是个啥？运动规划的高级计算近似结果，比如用传感器得到的轨迹推算出来的结果？）
+我们通过添加以下形式的成本$\lambda_{lin}\epsilon_z+\lambda_{quad}\epsilon_z^2$来限制沿 z 轴超调。同时对原有描述扩充以下几个约束：
+\begin{align}
+    {\mathbfit p}_{CoM}^z(t)-{\mathbfit \pi}_z(t)\leq &\epsilon_z \\
+    {\mathbfit p}_{CoM}^z(t)-{\mathbfit \pi}_z(t)\geq & -\epsilon_z \\
+    \epsilon_z \geq & 0
+\end{align}
+这里面$\epsilon$是一个松弛变量，它会被添加入优化参数${\mathbfit \xi}$中。由于时间依赖性，需要对轨迹进行采样，其中每个采样点引入两个额外的不等式约束。（为什么？）
+
+\subsection{等式约束：运动曲线段节点连续性}
+对于$x$方向上的第$k$段和第$k+1$段曲线的连续性要求可以写作：
+
+\begin{align}
+    \begin{bmatrix}
+    {\mathbfit \eta}(t_{fk})^T & -{\mathbfit \eta}(0)^T \\ \dot {\mathbfit \eta}(t_{fk})^T & - \dot {\mathbfit \eta}(0)^T
+    \end{bmatrix}
+    \begin{bmatrix}
+    {\mathbfit \alpha}_k^x \\ {\mathbfit \alpha}_{k+1}^x
+    \end{bmatrix} = 0
+\end{align}
+
+
+这里面$t_{fk}$代表曲线${\mathbfit s}_k$以秒为单位的持续时间长度。同样的方法，可以将$y,z$方向上的连续性要求写出来。
+节点连续性在涉及到悬空自由落体过程时需要被另外对待：起飞时的质心的动力学可以描述为：$\ddot{\mathbfit p}_{CoM} = {\mathbfit g}$，其中${\mathbfit g}$是重力加速度矢量。将上式积分可以得到：
+\begin{align}
+    \dot {\mathbfit p}(t) =& {\mathbfit g}t + \dot {\mathbfit p}_{CoM}(0) \\
+    {\mathbfit p}(t) =& \frac{1}{2}{\mathbfit g}t^2 + \dot {\mathbfit p}_{CoM}(t)+{\mathbfit p}_{CoM}(0)(0) 
+\end{align}
+着陆时的质心动力学可以描述为：
+\begin{align}
+    \ddot {\mathbfit T}(0){\mathbfit \alpha}_{i+1} =& {\mathbfit g}\\
+    \dot {\mathbfit T}(0){\mathbfit \alpha}_{i+1} =& {\mathbfit g}t_f + \dot {\mathbfit T}(t_i){\mathbfit \alpha}_{i} \\
+    {\mathbfit T}(0){\mathbfit \alpha}_{i+1} =& \frac{1}{2}{\mathbfit g}t_f^2+ [\dot {\mathbfit T}(t_i)t_f+{\mathbfit T}(t_i)]{\mathbfit \alpha}_{i}
+\end{align}
+这里面$t_i$表示第$i$条曲线段的持续时间。如果第一个或最后一个支持多边形对应于一个完整的飞行阶段，则可以在初始和最终条件下找到类似的替换。
+\begin{note}
+    这句话的含义是什么？实践上应该怎样应用？
+\end{note}
+
+\subsection{不等约束：基于ZMP}
+\begin{note}
+    这部分我还是看不太懂，这家伙已经不用购物车模型来近似计算ZMP了，还要再去看看ZMP的知识。
+\end{note}
+
+\subsubsection{ZMP的计算}
+\begin{align}
+    {\mathbfit p}_{ZMP} = \frac{{\mathbfit n}\times {\mathbfit M}_O^{gi}}{{\mathbfit n}^T {\mathbfit F}^{gi}}
+\end{align}
+
+这里面${\mathbfit M}_O^{gi}$和${\mathbfit F}^{gi}$是重力-惯性力螺旋的组成部分，它们的计算方式如下：
+\begin{align}
+    {\mathbfit M}_O^{gi} = & m\cdot {\mathbfit p}_{CoM}\times ({\mathbfit g}-\ddot{\mathbfit p}_{CoM})-\dot{\mathbfit L} \\
+    {\mathbfit F}^{gi} = & m\cdot{\mathbfit g} - \dot{\mathbfit P}
+\end{align}
+
+这里面$m, {\mathbfit P}, {\mathbfit L}$分别是质心的质量、线性动量和角动量。因为我们将不会针对转动及其延伸进行优化，因此下面的计算中角动量近似为零$ \dot{\mathbfit L}=0$。
+\subsubsection{引入的不等约束}
+基本要求是ZMP点药被约束在机械狗的支撑多边形内部，这给出以下形式的不等约束：
+\begin{align}
+    {\mathbfit h}_{ZMP} = {\mathbfit d}^T{\mathbfit p}_{ZMP}+r \geq 0
+\end{align}
+
+这其中${\mathbfit d}^T = \begin{bmatrix}p&q&0\end{bmatrix}$和$r$是描述支撑多边形的边的系数。接下来将$(12)$代入$(14)$后可以得到：
+
+\begin{align}
+    &{\mathbfit d}^T{\mathbfit S}({\mathbfit n}){\mathbfit M}_O^{gi} + r{\mathbfit n}^T{\mathbfit F}^{gi} \notag\\
+    = &{\mathbfit d}^T{\mathbfit S}({\mathbfit n})[m\cdot {\mathbfit p}_{CoM}\times ({\mathbfit g}-\ddot{\mathbfit p}_{CoM})-\dot{\mathbfit L}] + r{\mathbfit n}^T(m\cdot{\mathbfit g} - \dot{\mathbfit P}) \notag\\
+    \overset{\dot{\mathbfit L}\approx 0 | \dot{\mathbfit P}=m \ddot{\mathbfit p}_{CoM}}{=} & m{\mathbfit d}^T{\mathbfit S}({\mathbfit n}){\mathbfit p}_{CoM}\times ({\mathbfit g}- \ddot{\mathbfit p}_{CoM})+ mr{\mathbfit n}^T({\mathbfit g}- \ddot{\mathbfit p}_{CoM}) \geq 0 \notag\\
+    \rightarrow & {\mathbfit d}^T{\mathbfit S}({\mathbfit n}){\mathbfit S}({\mathbfit p}_{CoM})({\mathbfit g}- \ddot{\mathbfit p}_{CoM})+ r{\mathbfit n}^T({\mathbfit g}- \ddot{\mathbfit p}_{CoM}) \geq 0
+\end{align}
+这里面定义了一个斜对称矩阵${\mathbfit S}(a)$用来实现将矩阵叉乘转化为点乘的效果（这个方法优惠什么标准依据？）。它通过计算一个可以实现以下效果的方程得到： ${\mathbfit S}({\mathbfit a}){\mathbfit b} = {\mathbfit a}\times {\mathbfit b}$。
+用$(15)$也可以计算出$(14)$相对于质心位置${\mathbfit p}_{CoM}$和质心加速度$ \ddot{\mathbfit p}_{CoM}$的梯度（为什么要求这个梯度？怎么求得？）：
+\begin{align}
+    \nabla{\mathbfit h}_{ZMP} = 
+    \begin{bmatrix}
+    \Gamma\cdot ( \ddot{\mathbfit p}_{CoM}-{\mathbfit g}) \\
+    -\Gamma\cdot {\mathbfit p}_{CoM}-r{\mathbfit n}
+    \end{bmatrix}
+\end{align}
+
+
+这里面定义${\mathbfit \Gamma}={\mathbfit S}({\mathbfit S}^T({\mathbfit n}){\mathbfit d})$。同样，它的Hessian 矩阵计算为：
+\begin{align}
+    \nabla^2{\mathbfit h}_{ZMP} = 
+    \begin{bmatrix}
+    0 & {\mathbfit \Gamma}^T \\
+    -{\mathbfit \Gamma}^T & 0
+    \end{bmatrix}
+\end{align}
+
+这个Hessian矩阵是一个反对称矩阵，因此可以从优化问题中去除。（为什么呢？Hessian矩阵怎么计算的也得去了解一下。）
+\begin{note}
+    这部分不是很明白。为什么对问题描述添加那样的项就可以软化不等约束？具体的表现项是与软化参数之间的对应什么？
+\end{note}
+
+我们软化了初始$n_{ineq}$个样本的不等式约束，其中$n_{ineq}$是用户设置的调整参数。为了实现这一点，我们在优化参数${\mathbfit \xi}$中添加松弛变量$\xi_{ineq}$。这样一来，问题的表述会增加$\lambda_{lin}\xi_{ineq}+\lambda_{quad}\xi_{ineq}^2$，同时添加下面两个不等约束${\mathbfit c}_{ineq} \geq -\xi_{ineq}, \; \xi_{ineq}\geq 0$，其中${\mathbfit c}_{ineq}$是如$(15)$中描述的前$n_{ineq}$个约束条件。从物理的角度来看，松弛相当于一个可变大小的支撑多边形，不能小于标称多边形。
+
+\subsubsection{分配一个新的规划：搜索算法}
+下面讨论一下如何将一个新得到的运动规划添加到一个之前已经在执行的运动规划上，避免两者的冲突。为此，我们首先存储求解器优化所需的计算时间$t_c$。我们使用它作为初始猜测来搜索最接近当前测量值的运动规划中的位置，以便过渡到新计划是一个平滑的。为此，我们通过写作来解决线性搜索问题：
+\begin{align}
+    t= arg\, min_{\mathbfit W}||{\mathbfit p}(t)-{\mathbfit p}_{meas}||_2^2
+\end{align}
+这里面${\mathbfit W}$是一个正定权重矩阵${\mathbfit p}_{meas}$是完成优化动作后的测量得到的质心位置。
+
+\section{落脚点优化：倒立摆模型}
+建立如下二次规划问题：
+\begin{align}
+    \underset{\mathbfit \xi}{min}\quad \frac{1}{2}{\mathbfit \xi}^T {\mathbfit Q}{\mathbfit \xi}+{\mathbfit c}^T{\mathbfit \xi} \quad s. t. \quad {\mathbfit D}{\mathbfit \xi}\leq {\mathbfit f}
+\end{align}
+
+这里面${\mathbfit \xi}\in {\mathbb R}^{2n_{feet}}$是裸足点${\mathbfit p}_{f_i}$的$x,y$方向分量，其中$i=1,...,n_{feet}$，$n_{feet}=4$是机器所有脚的总数。与 CoM 运动规划器所做的类似，我们并行优化主控制回路。因此，每当新的优化准备好时，我们都会更新立足点计划。
+\subsection{成本函数}
+相对于默认的战力姿势配置，用户可以自定义一个落脚点位置。这个可以解释为落脚点优化问题的一个正则化项。
+\begin{note}
+    （正则化的概念需要熟悉一下？）
+\end{note}
+为了跟踪默认落脚点的位置${\mathbfit p}_{ref_i}$我们为成本函数$(19)$添加下述表述：
+\begin{align}
+    {\mathbfit p}_{ref_i} = {\mathbfit W}_{def}, \quad {\mathbfit c}_{def_i} = - {\mathbfit W}^T_{def} {\mathbfit p}_{ref_i}
+\end{align}
+
+默认立足点的选择将影响当所有腿与环境接触时足迹的程度。虽然这可能会使小跑步态对干扰更加健壮，但它会在较慢的步行步态中产生更广泛的横向运动。（不知所云？）在实践中，我们在 ANYmal 的实验中可靠地工作的默认立足点位置计算为臀部到地形的垂直投影。
+
+为了跟踪驱动整个运动框架的平均高级速度，我们惩罚与立足点位置的偏差。这些是在优化视界的持续时间内实现恒定速度来计算的。为了避免参考立足点中的跳跃，我们还为当前解决方案和先前计算的解决方案之间的距离设置了成本。
+
+最后，我们为成本函数添加一个稳定项，它是一个倒立摆模型的函数。如参考文献10中所述，这个函数用$\omega ({\mathbfit v}_ref - {\mathbfit v}_{hip_k}\sqrt{h/g})$计算第k个落脚点。这其中，$\omega$是一个正的权重标量，${\mathbfit v}_ref$是高级速度参考，${\mathbfit b}_{hips}$是第k个臀部的速度，$h$是第k个臀部到地面的高度，$g$是加速度常量。
+\begin{note}
+    这引导了去关注倒立摆模型的建模？
+\end{note}
+
+\subsection{不等约束：不可达落脚点}
+为了避免计算违反腿运动学扩展的立足点，我们通过在每个立足点的可行位置上添加不等式约束来利用QP设置。我们通过考虑腿的最大可伸展长度和测量的臀部与地面的高度关系来完成这个约束。
+将臀部的位置投影到地形平面上记作${\mathbfit h}_0$，我们设置了描述一个多边形的不等式，该多边形具有均匀分布在${\mathbfit h}_0$附近的$n_p$个顶点。多边形的各个顶点到臀部投影在地形的点${\mathbfit h}_0$的距离计算为：
+\begin{align}
+    \sqrt{l_{max}^2 - h_i^2}
+\end{align}
+\begin{note}
+    这就是一个直角三角形，斜边长度为腿的最大伸展长度$l_{max}$，高为臀部到地形的投影高度$h_i$，计算落脚点的可行范围，也就是底边长度。
+\end{note}
