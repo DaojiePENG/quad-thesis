@@ -197,7 +197,9 @@ KKT条件指出最优值必须满足一下三个条件：
 \begin{note}
   不知道这里添加的扰动$\tau$后面的那个$1$是什么意思？难道是笔误？
   
-  理论上第一行是关于$\mathbfit{x}$的偏导项，第二项和第三项分别是关于等式约束和不等式约束引入的拉格朗日乘子的偏导项。最后一项$\mathbfit{\mu}\mathbfit{s}-\mathbfit{\tau}\mathbfit{1}=0$的含义不是很清楚是什么意思？
+  理论上第一行是关于$\mathbfit{x}$的偏导项，第二项和第三项分别是关于等式约束和不等式约束引入的拉格朗日乘子的偏导项。最后一项$\mathbfit{\mu}\mathbfit{s}-\mathbfit{\tau}\mathbfit{1}=0$的含义不是很清楚是什么意思？这里面$\mathbfit{\mu}$是引入的拉格朗日乘子，$\mathbfit{s}$是引入的松弛变量，$\mathbfit{\tau}$是少量扰动。
+
+
 \end{note}
 其中：
 \begin{align}
@@ -271,4 +273,14 @@ KKT条件指出最优值必须满足一下三个条件：
 积极集法首先将QP中所有的不等式约束视为等式约束。把不等式约束直接转成等式约束当然是存在问题的，不等式约束存在有效和无效两种情况，而有效无效很容易通过该不等式对应的拉格朗日乘子进行判断。不等式约束的互补松弛条件告诉我们，不等式对应的拉格朗日乘子应当满足$\lambda_i\geq 0$。
 \begin{note}
   $\lambda_i\geq 0$这个松弛条件哪里提到的？得查一查。
+\end{note}
+
+在第$k$次迭代开始时，我们首先检查当前迭代点$\mathbfit{x}_k$是否为当前工作集$\mathbb{W_k}$（有效不等式约束集合）下的最优点。如果不是，我们就通过求解一个等式约束的QP命题来得到一个前进方向$p$。在计算$p$的时候，只关注$\mathbb{W_k}$中的不等式约束并将其转化为等式约束，而忽略其他不等式约束。令$\mathbfit{d}=\mathbfit{x}-\mathbfit{x}_k$，带入原命题得：
+\begin{align}
+  &min \quad \frac{1}{2}(\mathbfit{d}+\mathbfit{x}_k)^T\mathbfit{H}(\mathbfit{d}+\mathbfit{x}_k)+\mathbfit{g}^T(\mathbfit{d}+\mathbfit{x}_k) \notag\\
+  &s.t. \quad \mathbfit{a}_i^T(\mathbfit{d}+\mathbfit{x}_k)=b_i, \quad i \in \mathbb{W_k}
+\end{align}
+
+\begin{note}
+  这块暂时不继续花时间了，理解问题就可以了。另外也感觉这部分讲的不是很清楚。
 \end{note}

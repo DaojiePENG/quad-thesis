@@ -1,4 +1,75 @@
 % !TeX root = ../sustechthesis-example.tex
 
-\chapter{XXxxx}
+\chapter{如何构建RL控制训练模型}
+在这部分将阐述关于如何使用强化学习来进行运动控制的内容。相比于传统的基于模型的控制方法，该方法通过在模拟环境中训练控制策略，可以更好地适应复杂的非线性系统动力学和环境不确定性，并且能够实时响应用户命令和环境变化。在这里我们主要关注如何使用强化学习来训练机械狗类型的足式和轮式机器人控制器。
 
+
+\section{强化学习控制}
+
+本部分内容的探究起点是这篇文献的内容：\emph{Control of Wheeled-Legged Quadrupeds Using Deep Reinforcement Learning}\cite{Lee_Bjelonic_Hutter_2023}
+
+
+\subsection{强化学习的基本概念}
+
+在强化学习中，控制问题被建模为一个马尔可夫决策过程（Markov Decision Process）。MDP是一个RL中常用的用于随机控制过程建模的数学框架，它定义了一个包含状态空间、动作空间、奖励函数和状态转移函数的元组，描述了一个决策过程的基本组成部分。在MDP中，每个时间步骤代理从周围环境中观察到某个状态$s_t \in \mathcal{S}$，并输出一个动作$a_t \in \mathcal{A}$，接着环境通过状态转移函数$p(s_{t+1}|s_t, a_t)$演化到新的状态$s_{t+1}$，并且根据奖励函数给出相应的奖励$r_t\in \mathcal{R}:\mathcal{A}\times\mathcal{S}\to \mathbb{R}$和对更新后的环境状态的观察结果作为下一周期的$s_t$。
+代理可以根据$\theta$参数化的随机策略$\pi_\theta(a_t|s_t)$来采取行动。RL通过与环境交互来更新参数$\theta$以最大化累计折扣奖励（cumulative discounted rewards）$\mathbb{E} [\sum_{t=k}^{\infty}\gamma^t r_t]$，其中$k$是当前时间步长（timestep），$\gamma$是折扣因子（discount factor）。
+
+\subsection{如何实现基于深度强化学习的控制器在时间环境中的部署和优化}
+
+\begin{enumerate}
+    \item 在仿真环境中训练控制器：使用深度强化学习算法在仿真环境中训练控制器，使其能够完成所需的任务。在训练过程中，可以使用特权训练方法来提高训练效率和性能。
+    \item 部署控制器到实际环境中：将训练好的控制器部署到实际环境中，例如机器人或移动设备。在实际环境中，控制器将接收传感器数据并输出动作命令。
+    \item 优化控制器：在实际环境中，可以使用在线学习方法来进一步优化控制器的性能。例如，可以使用模型预测控制方法来对控制器进行在线微调。
+\end{enumerate}
+
+需要注意的是，在实际环境中，传感器数据可能会受到噪声和不确定性的影响，因此需要设计鲁棒性强的控制器来应对这些问题。此外，还需要考虑实际环境中的安全性和可靠性问题。
+
+
+\section{RL的构建、训练和部署}
+\subsection{MDP的制定}
+
+一个MDP是由一个元组定义，它包含状态空间$\mathcal{S}$、动作空间$\mathcal{A}$、奖励函数$r_t(s_t|s_{t+1})$、转移函数$p(s_{t+1}|s_t, a_t)$。
+这个策略的环境观察部分包括周围地面的高度扫描结果、来自IMU的本体姿态信息、来自各个关节点的编码器信息。
+运动被定义为一个21维的向量，包括步态参数偏移、关节点位置偏移和轮子速度控制指令。
+奖励函数由表\ref{table:reward_functions}定义。
+\begin{table}[h!]
+    \begin{center}
+      \caption{Reward functions. (The velocities are defined in the base frame)}
+      \label{table:reward_functions}
+      \begin{tabular}{l|l} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
+        \hline
+        \multicolumn{2}{l}{\textbf{Reward terms}}\\
+        \hline
+        Linear velocity & $1.5 \exp(-3(v^{xy}-\hat v^{xy})^2)$\\
+        Angular velocity & $1.0\exp(-3(\omega^z-\hat\omega^z)^2)$\\
+        Base motion penalty & $0.8\exp(-(v^z)^2)+\exp(-(\omega^{x,y})^2)$\\
+        Torque penalty & $-10^{-6} \|\tau\|^2$\\
+        Joint speed penalty & $-0.05\sum_{i=0}^{12}\max(|\dot \phi_i|-\dot\phi_{jslim},0)^2$\\
+        Action smoothness penalty & $-0.05|a_{t-2}-2a_{t-1}+a_t|$\\
+        \hline
+        \multicolumn{2}{l}{\textbf{Symbols}}\\
+        \hline
+        $\dot \phi_{jslim}$ & Maximum joint speed\\
+        $\tau$ & Vector of joint torques\\
+        $f_c$ & Foot contact state\\
+        $\hat{(\cdot)}$ & Traget quantity\\
+        $(\cdot)_g$ & Sub-goal quantity\\
+        $\mathbb{1}_{(condition)}(\cdot)$ & Indicator function\\
+        \hline
+      \end{tabular}
+    \end{center}
+\end{table}
+
+状态转换遵循刚性的动力学模拟，当机器人主体接触地面或到达关节扭矩和速度限制时，该训练集终止。
+
+\subsection{RL模型的训练方式}
+
+我们遵循Lee等人\cite{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}的特权训练方法。我们首先使用on-policy RL算法\cite{Schulman_Wolski_Dhariwal_Radford_Klimov_2017}训练具有无噪声模拟状态(特权信息)的教师策略。换句话说，我们用额外的模拟状态附加给$s_t$，包括地面摩擦系数、地面反作用力以及每个连杆的接触状态。特权信息使教师策略能够学习地形自适应行为。由于无噪声和准确的模拟状态，教师策略快速收敛到高性能策略。在桌面PC上使用PPO算法\cite{Schulman_Wolski_Dhariwal_Radford_Klimov_2017}，教师策略训练大约需要8小时。然后我们为实际部署训练一个学生策略。学生策略在没有特权信息和观察噪声的情况下模仿老师。通过模仿学习\cite{Ross_Gordon_Bagnell_2010}，它学习从嘈杂的真实世界观察序列构建世界的内部表示。以这种方式训练的策略已被证明在具有高干扰和噪声观测的真实世界环境中更具适应性和鲁棒性\cite{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}。
+
+\subsection{训练平台和部署}
+
+训练采用的平台有Raisim\cite{Hwangbo_Lee_Hutter_2018, Lee_Bjelonic_Hutter_2023}仿真器、英伟达的Isaac\cite{Rudin_Hoeller_Reist_Hutter_2021}仿真器。
+
+\begin{note}
+    2023-10-06 18:19:57，感觉强化学习者部署起来也不是件容易得事情呀。后面关于运动控制建模的方式就先不看了。重点关注用强化学习做控制要关注的内容。
+\end{note}

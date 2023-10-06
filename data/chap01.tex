@@ -4,7 +4,7 @@
 
 \section{机械狗运动模型描述}
 
-机器人与环境接触的机械系统的运动模型描述方程可以描述如下\cite{zhangkun1994}：
+机器人与环境接触的机械系统的运动模型描述方程可以描述如下\cite[p2]{Bellicoso_Jenelten_Fankhauser_Gehring_Hwangbo_Hutter_2017}：
 
 \begin{align}
     {\mathbfit M}({\mathbfit q})\dot{\mathbfit u} + {\mathbfit h}({\mathbfit q}, {\mathbfit u}) =  {\mathbfit S}^T{\mathbfit \tau} + {\mathbfit J}_S^T {\mathbfit \lambda}
@@ -62,7 +62,7 @@
 
 
 \section{质心运动(CoM Motion)问题表述}
-每一个坐标方向的质心运动规划都被描述成一个系列的五次样条。比如沿着x方向的其中第$i-th$曲线可以描述为：
+每一个坐标方向的质心运动规划都被描述成一个系列的五次样条。比如沿着x方向的其中第$i-th$曲线可以描述为\cite[p7]{Bellicoso_Jenelten_Gehring_Hutter_2018}：
 \begin{align}
     x(t) = & a_{i5}^x t^5 +  a_{i4}^x t^4 + a_{i3}^x t^3 +  a_{i2}^x t^52+  a_{i1}^x t^1 +  a_{i0}^x t^0 \notag\\
     = & \begin{bmatrix}t^5 & t^4 & t^3 & t^2 & t^1 & t^0\end{bmatrix} \notag\\ 

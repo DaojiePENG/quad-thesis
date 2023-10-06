@@ -8,6 +8,8 @@ ${\mathbfit \xi}_d$
 下面的控制方法采用接触力控制
 
 \subsection{运动方程}
+
+通过利用选择矩阵$\mathbfit{S}^T$诱导的分解，我们可以将运动和接触力限制在浮动基系统动力学描述的流形上，有如下式\cite[p2]{Bellicoso_Jenelten_Fankhauser_Gehring_Hwangbo_Hutter_2017}：
 \begin{align}
     \begin{bmatrix}{\mathbfit M}_{fb} & - {\mathbfit J}_{s_{fb}}^T \end{bmatrix} {\mathbfit \xi}_d = - {\mathbfit h}_{fb}
 \end{align}
@@ -104,7 +106,20 @@ $${\mathbfit \tau}_d = \begin{bmatrix} {\mathbfit M}_j & -{\mathbfit J}^T_{s_j}\
     因此，所有规划的目的就是给出节点的运动加速度$\dot{\mathbfit u}_d^T$和接触力${\mathbfit \lambda}_d^T$。
 \end{note}
 
+
+
+
+\chapter{运动优化}
+这部分主要参考文献\cite[p3-6]{Bellicoso_Jenelten_Fankhauser_Gehring_Hwangbo_Hutter_2017}。
+
+\section{足态保持}
 \section{支撑多边形序列生成}
+\section{问题描述}
+\section{规划初始化}
+\section{成本函数}
+\section{等式约束}
+\section{不等式约束}
+\section{约束松弛}
 >这部分的详细描述要参考文献2。
 
 
