@@ -60,6 +60,17 @@
 
 它是接触点的支撑力${\mathbfit \lambda}$向节点力转换的矩雅可比矩阵，包含了$n_c$个雅可比矩阵，$n_c$为接触地面的肢体个数。
 
+如果足接触建模为点接触的话，在稳定接触的情况下，每个接触点会产生三个相应的约束条件：
+\begin{align}
+    \begin{cases}
+        _I\mathbfit{r}_{IC}(t)=const\\
+        _I \mathbfit{\dot r}_{IC}=\mathbfit{J}_C\mathbfit{u}=0\\
+        _I\mathbfit{\ddot r}_{IC}=\mathbfit{J}_C \mathbfit{\dot u}+\mathbfit{\dot J}_C\mathbfit{u}=0
+    \end{cases}
+\end{align}
+
+其含义就是在惯性系下看接触点的位置是固定的为定值，并且其速度和加速，也即其一阶导数和二阶导数为零。
+
 
 \section{质心运动(CoM Motion)问题表述}
 每一个坐标方向的质心运动规划都被描述成一个系列的五次样条。比如沿着x方向的其中第$i-th$曲线可以描述为\cite[p7]{Bellicoso_Jenelten_Gehring_Hutter_2018}：
@@ -103,5 +114,7 @@
     \dot {\mathbfit p}_{CoM}(t) = \dot {\mathbfit T}(t){\mathbfit \alpha}_i \in{\mathbb R}^3 \\
     \ddot {\mathbfit p}_{CoM}(t) = \ddot {\mathbfit T}(t){\mathbfit \alpha}_i \in{\mathbb R}^3
 \end{align}
+
+
 
 
