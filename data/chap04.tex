@@ -120,7 +120,7 @@ RL的目标是找到一个能够使得未来轨迹的预期折扣奖励最大化
 
 在训练的第一阶段，我们的目标是找到一个可以访问完美、特权信息的最佳参考控制策略，并使ANYmal在随机生成的地形上遵循所需的命令速度。命令需求随机生成并构成一个向量$\mathbfit{v}_des\in \mathbb{R}^3=(v_x,v_y,w)$，其中$v_x, v_y$分别表示在机器人自身坐标系下的纵向速度和横向速度，$w$表示自转速度。
 
-我们采用近端策略优化\emph{proximal policy optimization(PPO)}\cite[p]{Schulman_Wolski_Dhariwal_Radford_Klimov_2017}来训练教师策略。教师策略被建模为一个高斯策略，$a_t~\mathcal{N}(\pi_{\theta}(o_t=s_t),\sigma I)$，其中$\pi_{\theta}$由用$\theta$参数化的多层感知器\emph{multilayer perceptron(MLP)}实现，$\sigma$表示每个动作之间的方差。
+我们采用近端策略优化\emph{proximal policy optimization(PPO)}\cite[p]{Schulman_Wolski_Dhariwal_Radford_Klimov_2017}来训练教师策略。教师策略被建模为一个高斯策略，$a_t \sim \mathcal{N}(\pi_{\theta}(o_t=s_t),\sigma I)$，其中$\pi_{\theta}$由用$\theta$参数化的多层感知器\emph{multilayer perceptron(MLP)}实现，$\sigma$表示每个动作之间的方差。
 
 \subsection[观测和行动]{观测和行动}
 
@@ -131,7 +131,62 @@ RL的目标是找到一个能够使得未来轨迹的预期折扣奖励最大化
   \item $s_t^p$包括接触状态、接触力、接触法线、摩擦系数、大腿和小腿接触状态、施加到身体上外部力和力矩、摆动阶段持续时间；
 \end{itemize}
 
-我们的动作空间受到中心模式生成器的启发\cite[p]{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}。每条腿$l={1,2,3,4}$保存一个相位变量$\phi_l$并定义了基于相位的标称轨迹。这个标称轨迹是一个脚尖的步进运动，我们使用逆运动学来计算每个关节执行器$i={1, \dots, 12}$的标称关节目标$q_i(\phi_l)$。来自策略的动作是相差$\Delta \phi_l$和关节位置目标残差$\Delta q_i$。\textcolor{gray}{\small 更详细相关内容看相关附件的S5。}
+我们的动作空间受到中心模式生成器的启发\cite[p]{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}。每条腿$l={1,2,3,4}$保存一个相位变量$\phi_l$并定义了基于相位的标称轨迹。这个标称轨迹是一个脚尖的步进运动，我们使用逆运动学来计算每个关节执行器$i={1, \dots, 12}$的标称关节目标$q_i(\phi_l)$。来自策略的动作是相差$\Delta \phi_l$和关节位置目标残差$\Delta q_i$。
+
+\textcolor{gray}{\small 更详细相关内容看相关附件的S5。}
+
+观测向量定义如\ref{tb:observations}表所示。本体感知包括命令、节点、身体信息、腿部相位信息。中央模式生成器\emph{central pattern generator(CPG)}的相位信息包含$\Delta\phi_l, \cos\phi_l, \sin\phi_l$和每条腿$l$的基础频率。对于外部感知我们采用每个脚周围的高度采样来代替局部高程图。圆形采样模式包括每只脚周围的$\{6, 8, 10, 12, 16\}$个点，半径分别为$\{0.08, 0.16, 0.26, 0.36, 0.48\}$m。
+
+运动被定义为$\langle \Delta \phi_l, \Delta q_i \rangle$，其中$\Delta \phi_l$和$\Delta q_i$分别表示每个条腿（$l\in\{legs\}$）的相位偏移和节点目标位置残差（$i\in \{1, \dots, 12\}$）。
+我们有一个标称轨迹$\mathbfit{p}(\phi):\mathbb{R}\longrightarrow\mathbb{R}^3$，它将各个$\phi_l$映射到目标脚位置，随着$\phi$在$[0,2\pi)$范围内生成周期性步进运动。从动作中，每条腿$l$的节点目标位置用逆运动学$IK(\cdot)$和基础相位频率$\Delta\phi_0$定义为$q_{i\in l}^{target}=IK(\mathbfit{p}(\phi_l+\Delta \phi_l + \Delta \phi_0))+\Delta q_{i\in l}$。
+
+标称足迹定义如下。如果相位是处于上摆动期间（$0\leq\phi_l\leq \pi/2$）则：
+\begin{align}
+  \mathbfit{p}_l(\phi_l)=\langle x_l^n, y_l^n, z_l^n + 0.2\cdot(-2t_l^3+3t_l^2)\rangle, where\ t_l=2/\pi\cdot\phi_l
+\end{align}
+
+$\{x,y,z\}_l^n$是默认姿态配置处的标称脚位置。三次Hermite样条在$\phi_l=0$处连接$z=z_l^n$在$\phi_l=\pi/2$处连接$z=z_l^n+0.2$。
+
+在下摆动期间（$\pi/2 < \phi_l \leq \pi$），足高计算如下：
+\begin{align}
+  \mathbfit{p}_l(\phi_l)=\langle x_l^n, y_l^n, z_l^n + 0.2\cdot(2t_l^3-3t_l^2+1)\rangle, where\ t_l=2/\pi\cdot\phi_l-1
+\end{align}
+
+它与前面的函数对称。在驻立阶段（$\pi< \phi_l \leq 2\pi$），$\mathbfit{p}_l(\phi_l)=\langle x_l^n, y_l^n, z_l^n \rangle$。
+
+
+
+\begin{table}
+  \centering
+  \caption{Observations. Proprioception is used for both teacher and student training. Exteroception is given in the form of height samples. The privileged information is used only for teacher training.}
+  \label{tb:observations}
+  \begin{tabular}{l|ll}
+    \hline
+    Observation type & Input & Dimensionality\\
+    \hline
+    \multirow{9}{*}{Proprioception} & command & 3\\
+    &body orientation & 3\\
+    &body velocity & 6 \\
+    &joint position & 12 \\
+    &joint velocity & 12 \\
+    &joint position history (3 time steps) & 36\\
+    &joint velocity history (2 time steps) & 24 \\
+    &joint target history (2 time steps) & 24 \\
+    &CPG phase information & 13 \\
+    \hline
+    Exteroception & height samples & 208\\
+    \hline
+    \multirow{8}{*}{Privileged info.} & contact states & 4\\
+    &contact forces & 12\\
+    &contact normals & 12 \\
+    &friction coefficients & 4\\
+    &thigh and shank contact & 8 \\
+    &external forces and torques & 6\\
+    &airtime & 4 \\
+    \hline 
+  \end{tabular}
+\end{table}
+
 
 \subsection[策略构架]{策略构架}
 
@@ -142,7 +197,14 @@ RL的目标是找到一个能够使得未来轨迹的预期折扣奖励最大化
   \item 
 \end{enumerate}
 
-这些编码器将每个输入压缩为更紧凑的表示，并使得学生策略能更方便地重用一些教师策略组件。\textcolor{gray}{\small 更详细相关内容看相关附件的S6。}
+这些编码器将每个输入压缩为更紧凑的表示，并使得学生策略能更方便地重用一些教师策略组件。
+
+\textcolor{gray}{\small 更详细相关内容看相关附件的S6。}
+
+策略网络由多层MLP组成。用基于MLP的编码器$(g_e,g_p)$，将高度采样结果首先编码成为一个$24\times4=96$维的潜在向量；将特权信息编码成为一个$24$维的潜在变量。每个编码器有两层分别是$\{80,60\}$和$\{64,32\}$的隐藏单元。高度样本首先分别针对每只脚分别输入到编码器中，然后连接成一个特征向量。然后将这些特征与本体感受观察连接起来，并馈送到另一个具有三个隐藏层$\{256, 160, 128\}$的MLP。所有MLP的激活函数为LeakyReLU (72)。
+
+我们使用具有外部感受门的GRU作为信念编码器（图\ref{fig:terrain_perception}C）。GRU由2个堆叠的层组成，每个层有$50$个隐藏单元。
+信念编码器和外部感知门$g_b,g_a$用于计算$96 + 24 = 120$维信念状态$b_t$和$96$维注意力向量$\alpha$。每个编码器有两个隐藏层，每个隐藏层有$\{64, 64\}$和$\{64, 64\}$个隐藏单元。过滤后的外部感受信息$l_t^e\odot\alpha$被添加到$g_b(b_t')$，使用零填充来匹配维度差异。
 
 \subsection[奖励函数]{奖励函数}
 
@@ -157,8 +219,67 @@ RL的目标是找到一个能够使得未来轨迹的预期折扣奖励最大化
 其中$\mathbfit{v}_{des}\in\mathbb{R}^2$是所需的水平速度，$\mathbfit{v}\in\mathbb{R}^2$是身体坐标系下当前身体速度。同样的奖励机制也被应用与转动速度情况。
 
 我们惩罚与期望速度正交的速度分量以及横摇、俯仰和偏航周围的身体速度。此外，我们使用整形奖励进行身体方向、关节扭矩、关节速度、关节加速度和脚滑以及小腿和膝盖碰撞。身体方向奖励用于避免身体的奇怪姿势。联合相关奖励术语用于避免过于激进的运动。脚滑和碰撞奖励术语用于避免它们。我们通过在模拟中查看策略的行为来调整奖励术语。除了遍历性能外，我们还检查了运动的平滑度。
+
 \textcolor{gray}{\small 更详细相关内容看相关附件的S7。}
 
+奖励函数定义为：
+\begin{align}
+  r=0.75(r_{lv}+r_{av}+r_{lvo})+r_b+0.003r_{fc}+0.1r_{co}+0.001r_j+0.08r_{jc}+0.003r_s+1.0\cdot 10^{-6}r_{\tau}+0.003r_{slip}
+\end{align}
+各项的具体定义如下：
+\begin{enumerate}
+  \item 线速度奖励\emph{Linear Velocity Reward($r_{lv}$)}：这项鼓励策略去跟随需要的水平（$x,y$ plane）速度指令：\begin{align}
+    r_{lv}=\begin{cases}
+    \exp(-|\mathbfit{v}|^2), & if |\mathbfit{v}_{des}|=0\\
+    1.0, & else if \mathbfit{v}_{des}\cdot\mathbfit{v}>|\mathbfit{v}_{des}|\\
+    \exp(-(\mathbfit{v}_{des}\cdot\mathbfit{v}-|\mathbfit{v}_{des}|)^2), & otherwise
+  \end{cases}
+  \end{align}其中$\mathbfit{v}_{des}\in\mathbb{R}^2$是目标水平速度，$\mathbfit{v}\in\mathbb{R}^2$是身体坐标系下当前身体的速度。
+  \item 角速度奖励\emph{Angular Velocity Reward($r_{av}$)}：这一项鼓励策略去跟随需要的转动速度指令：\begin{align}
+    r_{av}=\begin{cases}
+    \exp(-w_z^2), & if w_{des}=0\\
+    1.0, & else if w_{des}\cdot\mathbfit{w}_z>w_{des}\\
+    \exp(-(w_{des}\cdot w_z-|w_{des}|)^2), & otherwise
+  \end{cases}
+  \end{align}
+  \item 线性正交速度奖励\emph{Linear Orthogonal Velocity Reward($r_{lvo}$)}：这项惩罚与目标速度指令正交的速度：\begin{align}
+    r_{lvo}=\exp(-3.0|\mathbfit{v}_o|^2), where\ \mathbfit{v}_o=\mathbfit{v}-(\mathbfit{v}_{des}\cdot\mathbfit{v})\mathbfit{v}_{des}
+  \end{align}
+  \item 身体运动奖励\emph{Body Motion Reward($r_{b}$)}：这项惩罚身体速度中不符合指令要求的部分：\begin{align}
+    r_{bm}=-1.25v_z^2-0.4|\omega_x|-0.4|\omega_y|
+  \end{align}
+  \item 脚感奖励\emph{Foot Clearance Reward($r_{fc}$)}：当一条腿处于摆动相位时，比如$\phi_i\in[0,\pi)$，机器人应该将这条腿上对应的脚抬起到比障碍物高的程度。但是，为了防止机器人做出不必要的抬高间隙，我们通过给出惩罚$r_{fcl}$来正则化腿轨迹。$H_{sample,l}$是第$l$只脚的高度采样。这样，间隙成本定义为：\begin{align}
+    &f_{fcl}=
+    \begin{cases}
+    -1.0, & if\ \max(H_{sample,l})<-0.2\\
+    0.0, &otherwise\\
+    \end{cases}\\
+    &r_{fc}=\sum_{l=1}^{4}r_{fcl}
+  \end{align}注意高度样本是相对于脚高度进行采样，因此$-0.2$表示地形高度比脚低$0.2$m；脚比采样的地形高度高$0.2$m。
+  \item 小腿和膝关节碰撞奖励\emph{Shank and Knee Collision Reward($r_{co}$)}：我们希望惩罚脚以外的地形和机器人部件之间的不良接触，以避免硬件损坏：$$r_{co}=\begin{cases}
+    -c_k, & if shank or knee is in collision\\
+    0.0, & otherwise\\
+  \end{cases}$$这里$c_k$是课程因子，它单调增加并收敛到1。
+  \item 节点运动奖励\emph{Joint Motion Reward($r_{j}$)}：该项惩罚关节速度和加速度以避免振动：\begin{align}
+    r_s=-c_k\sum_{i=1}^{12}(0.01\dot q_i^2+\ddot q_i^2)
+  \end{align}其中$\dot q_i, \ddot q_i$分别是节点的速度和加速度。
+  \item 节点约束奖励\emph{Joint Constraint Reward($r_{jc}$)}：该项在联合空间中引入了一个软约束。为了避免相反方向的膝关节翻转，我们对超过阈值的惩罚：\begin{align}
+    r_{jc,i}=\begin{cases}
+      -(q_i-q_{i,th})^2, & if\ q_i>q_{i,th}\\
+      0.0, & otherwise\\
+    \end{cases}\\
+    r_{jc}=\sum_{i=1}^{12}r_{jc,i}\\
+  \end{align}其中$q_{i,th}$是第$i$个节点的阈值。我们只设置膝关节的阈值。
+  \item 目标平滑奖励\emph{Target Smoothness Reward($r_{s}$)}：通过对目标位置一阶和二阶有限差分导数的大小进行惩罚，使生成的足部轨迹变得更平滑:\begin{align}
+    r_s=c_k\sum_{i=1}^{12}((q_{i,t}^{des}-q_{i,t-1}^{des})^2+(q_{i,t}^{des}-2q_{i,t-1}^{des}+q_{i,t-2}^{des})^2)
+  \end{align}其中$q_{i,t}^{des}$是$t$步时间里第$i$个节点的目标位置。
+  \item 扭矩奖励\emph{Torque Reward($r_{\tau}$)}：我们惩罚节点的扭矩里节省能耗（$\tau\propto electric current$）：\begin{align}
+    r_{\tau}=-c_k\sum_{i=1}^{12}\tau_i^2
+  \end{align}其中$\tau_i$是执行器网络计算出的第$i$个节点的扭矩。
+  \item 滑动奖励\emph{Slip Reward($r_{slip}$)}：我们惩罚与地面接触的脚的速度以减少滑动情况：\begin{align}
+    r_{slip}=-c_k\sum_{l\in \{foot in contact\}}v_{f,l^2}
+  \end{align}其中$v_{f,l^2}$是与地面接触了的第$l$只脚的速度。
+\end{enumerate}
 \subsection[课程]{课程}
 随着策略性能的提高，我们使用两个课程来提高难度。
 一个课程使用自适应方法\cite[p]{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}调整地形难度，另一个改变元素，如奖励或使用逻辑函数\cite[p]{Hwangbo_Lee_Dosovitskiy_Bellicoso_Tsounis_Koltun_Hutter_2019}应用干扰。
@@ -211,11 +332,33 @@ RL的目标是找到一个能够使得未来轨迹的预期折扣奖励最大化
   \item 幅度较大的噪声来模拟由于遮挡或映射失败导致完全缺乏地形信息的情况。
 \end{enumerate}
 
-这三个映射条件在每个训练集的开头以60、30和10\%的比例选择。
+这三个映射条件在每个训练集的开头以60\%、30\%和10\%的比例选择。
 
 最后，我们将每个训练地形划分为单元格，并向高度样本添加附加偏移量，具体取决于它采样的单元格。这模拟了不同地形特征的区域之间的转换，如植被和深度雪。参数向量$z$也是学习课程的一部分，其幅度随训练持续时间线性增加。
 
 \textcolor{gray}{\small 更详细相关内容看相关附件的S8。}
+
+在学生训练期间，我们随机化每只脚周围绘制的高度样本（图\ref{fig:terrain_perception}A）。我们扰动每个样本的位置，并将噪声添加到测量的高度值中，如下所示。
+\begin{align}
+  x_p=r_p\cos(\theta_p)+\epsilon_{px}+\epsilon_{fx}+w_x\\
+  y_p=r_p\sin(\theta_p)+\epsilon_{py}+\epsilon_{fy}+w_y\\
+  h_p=h(x_p,y_p)+\epsilon_{pz}+\epsilon_{fz}+w_z+\epsilon_{outlier}
+\end{align}
+
+其中$h(x_p,y_p)$表示在点$(x_p,y_p)$处的高度，$r_p$是$p$点的径向距离，$\theta_p$是$p$在脚周围的极坐标中的方位角。$\epsilon_{px},\epsilon_{py},\epsilon_{pz}$表示每个时间步长里各个点的采样噪声。$\epsilon_{fx},\epsilon_{fy},\epsilon_{fz}$表示每个时间步长里各个脚的采样噪声。$w_x, w_y, w_z$表示每个片段里各个脚的采样噪声。$\epsilon_{outlier}$是间歇性添加的大噪声来模拟异常值。
+
+使用参数$z$从正态分布中采样每个噪声。$\epsilon_{px},\epsilon{py}\sim \mathcal{N}(0,z_0), \epsilon{pz}\sim \mathcal{N}(0,z_1), \epsilon_{fx},\epsilon{fy}\sim \mathcal{N}(0,z_2), \epsilon{fz}\sim \mathcal{N}(0,z_3), \epsilon_{outlier}\sim \mathcal{N}(0,z_4)$ 概率分别为 $p=z_5,w_x,w_y\sim\mathcal{N}(0,z_6),w_z\sim\mathcal{N}(0,z_7)$。
+
+我们为学生训练定义三种情况：\emph{nominal, offset, noisy}。每种情况的参数$z$定义如下：
+\begin{align}
+  z_{nominal}=\langle0.004, 0.005, 0.01, 0.04, 0.03,0.05, 0.1\rangle\\
+  z_{offset}=\langle0.004, 0.005, 0.01, 0.1c_{sk}, 0.1c_{sk},0.02, 0.1\rangle\\
+  z_{noisy}=\langle0.004, 0.1c_{sk}, 0.1c_{sk}, 0.3c_{sk}, 0.3c_{sk},0.3c_{sk}, 0.1\rangle
+\end{align}
+
+其中$c_{sk}$是学生课程因子，会随着训练片段增加而不断线性增加。
+我们在轨迹的开头和中间随机选择其中一个条件。选择的概率分别是60\%、30\%和10\%。
+
 
 \subsection[信念状态寄存器]{信念状态寄存器}
 
