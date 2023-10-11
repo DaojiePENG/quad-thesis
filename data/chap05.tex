@@ -2,7 +2,7 @@
 
 \chapter{RL控制框架分析}
 
-这部分将分析不同类型的RL控制实现框架。一般来说对机器人的控制不仅需要一个良好训练后的策略，还需要一些外围的辅助模块。因为机器人控制的直接控制目标是关节点，而很多RL策略给出的并不是直接可以对应到关节点位置、扭矩等的信息，而是以残差控制的形式给出的。首先机器人自己会有一套基础的轨迹生成器（中心模式生成器）及相应的电机闭环控制，RL策略起作用的方式是给中心模式生成器的结果进行额外的调整再输入给电机，也就是残差控制。
+这部分将分析不同类型的RL控制实现框架。一般来说对机器人的控制不仅需要一个良好训练后的策略，还需要一些外围的辅助模块。因为机器人控制的直接控制目标是关节点，而很多RL策略给出的并不是直接可以对应到关节点位置、扭矩等的信息，而是以残差控制的形式给出的。在这种情况下首先机器人自己会有一套基础的轨迹生成器（中心模式生成器）及相应的电机闭环控制，RL策略起作用的方式是给中心模式生成器的结果进行额外的调整再输入给电机，也就是残差控制。
 
 \section[RL案例1]{Learning quadrupedal locomotion over challenging terrain\cite[p7]{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}}
 
@@ -13,7 +13,7 @@
     \includegraphics[width=1.0\linewidth]{creating_a_proprioceptive_locomotion_controller.png}
     \caption{Creating a proprioceptive locomotion controller\cite[p7]{Lee_Hwangbo_Wellhausen_Koltun_Hutter_2020}.}
     \label{fig:creating_a_proprioceptive_locomotion_controller}
-  \end{figure}
+\end{figure}
 
   图\ref{fig:creating_a_proprioceptive_locomotion_controller}是一个只采用本体感知进行机器狗控制的RL策略实现架构。它包括训练定义、地形定义、控制架构。
   \begin{itemize}
@@ -92,3 +92,27 @@ $F(\phi)$的定义如下：
 神经网络策略输出$f_{iS}$和脚的目标位置残差（$\Delta \mathbfit{r}_{f_i, T}$）。这样，第$i$个脚的目标位置是$\mathbfit{r}_{f_i, T}:=F(\phi_i)+\Delta \mathbfit{r}_{f_i, T}$。
 
 跟随控制是使用解析\emph{逆运动学(inverse kinematics, IK)}和关节点\emph{位置控制(position control)}实现的。在$H_i$中定义的脚位置首先表述在机器人身体系中，然后用IK计算关节点的位置目标。而关节点的位置目标依靠关节点的PD控制器来跟随。使用IK的好处是可以最大化计算效率同时在\emph{仿真到实际(sim-to-real)}的过程中可以复用已有的位置控制驱动器模型\cite[p]{Lee_Hwangbo_Hutter_2019,Hwangbo_Bellicoso_Fankhauser_Huttery_2016}。
+
+
+
+
+
+
+
+
+
+\section[RL案例2]{Learning agile and dynamic motor skills for legged robots\cite[p8]{Hwangbo_Lee_Dosovitskiy_Bellicoso_Tsounis_Koltun_Hutter_2019}}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\linewidth]{training_control_policies_in_simulation.png}
+    \caption[Training control policies in simulation]{The policy network maps the current joint state and position history to the joint target. }
+    \label{fig:training_control_policies_in_simulation}
+\end{figure}
+
+如图\ref{fig:training_control_policies_in_simulation}所示，整个训练循环包含下面几个部分：
+\begin{itemize}
+    \item 首先，一个刚体仿真模拟器运用给定的关节节点扭矩和电流状态计算输出机器人下一状态。与此同时关节点的速度和位置误差在有限时间窗口内被缓冲在节点状态历史中以备网络层使用。
+    \item 接着，由两个隐藏层的MLP神经网络构成控制策略，它将输入的电流状态和节点状态历史的观测信息映射成节点位置目标。
+    \item 最后，关节点神经网络将关节点状态历史和关节点位置目标映射到$12$个关节点的扭矩值上，然后继续整个循环。
+\end{itemize}

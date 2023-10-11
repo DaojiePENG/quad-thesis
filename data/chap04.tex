@@ -31,11 +31,11 @@
 一个MDP是由一个元组定义，它包含状态空间$\mathcal{S}$、动作空间$\mathcal{A}$、奖励函数$r_t(s_t|s_{t+1})$、转移函数$p(s_{t+1}|s_t, a_t)$。这套定义方式和文献类似\cite[p]{Miki_Lee_Hwangbo_Wellhausen_Koltun_Hutter_2022}。
 这个策略的环境观察部分包括周围地面的高度扫描结果、来自IMU的本体姿态信息、来自各个关节点的编码器信息。
 运动被定义为一个21维的向量，包括步态参数偏移、关节点位置偏移和轮子速度控制指令。
-奖励函数由表\ref{table:reward_functions}定义。
+奖励函数由表\ref{tb:reward_functions}定义。
 \begin{table}[h!]
     \begin{center}
       \caption{Reward functions. (The velocities are defined in the base frame)}
-      \label{table:reward_functions}
+      \label{tb:reward_functions}
       \begin{tabular}{l|l} % <-- Alignments: 1st column left, 2nd middle and 3rd right, with vertical lines in between
         \hline
         \multicolumn{2}{l}{\textbf{Reward terms}}\\

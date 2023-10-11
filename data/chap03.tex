@@ -62,7 +62,7 @@
 
 \subsection{质心运动优化的成本函数\label{subsection:cost_function}}
 
-在我们的问题描述中，在公式\ref{function:optimization_problem}中出现的Hessian矩阵$\mathbfit{Q}\in\mathbb{R}^{12n\times12n}$和线性项$\mathbfit{c}\in\mathbb{R}^{12n}$都有若干组成部分。我们通过下面式子来惩罚实际位置$\mathbfit{p}(t)=\mathbfit{T}(t)\mathbfit{\alpha}$与$\mathbfit{p}_r$的偏差:
+在我们的问题描述中，在公式\eqref{function:optimization_problem}中出现的Hessian矩阵$\mathbfit{Q}\in\mathbb{R}^{12n\times12n}$和线性项$\mathbfit{c}\in\mathbb{R}^{12n}$都有若干组成部分。我们通过下面式子来惩罚实际位置$\mathbfit{p}(t)=\mathbfit{T}(t)\mathbfit{\alpha}$与$\mathbfit{p}_r$的偏差:
 
 \begin{align}
     \label{function:penalize_deviation}
@@ -73,12 +73,12 @@
     \end{cases}
 \end{align}
 
-最小化公式\ref{function:penalize_deviation}中的最小化平方范数相当于用公式\ref{function:optimization_problem}的形式求解QP问题：
+最小化公式\eqref{function:penalize_deviation}中的最小化平方范数相当于用公式\eqref{function:optimization_problem}的形式求解QP问题：
 \begin{align}
     \mathbfit{Q}=\mathbfit{T}^T\mathbfit{W}\mathbfit{T} \quad \mathbfit{c}=-\mathbfit{T}^T\mathbfit{W}^T\mathbfit{p}_r
 \end{align}
 
-为了惩罚速度参考的偏差，只需在公式\ref{function:penalize_deviation}中使用̇$\mathbfit{\dot T}$和̇$\mathbfit{\dot p}_r$。可以对加速度偏差进行类似的推理。
+为了惩罚速度参考的偏差，只需在公式\eqref{function:penalize_deviation}中使用̇$\mathbfit{\dot T}$和̇$\mathbfit{\dot p}_r$。可以对加速度偏差进行类似的推理。
 
 \subsubsection{加速度最小化}
 如文献\cite[p]{Kalakrishnan_Buchli_Pastor_Mistry_Schaal_2010}所示，我们可以通过写作来最小化加速度：
@@ -105,8 +105,8 @@
 
 其中$\rho=10e^{{-8}}$，线性项为空。
 
-\textcolor{gray}{
-    从文献\cite[p]{Goldfarb_Idnani_1983}中看得，由于两次求导，$\alpha_{1k}, \, \alpha_{2k}$将都是零。这样整个成本函数就从\ref{function:cost_Q_k1}简化成了\ref{function:cost_Q_k2}，这在对矩阵初始化的时候很有意义因为非零项会被初始化成很小的数$\rho=10e^{-8}$，而恒零项就可以直接赋值为0。
+\textcolor{gray}{\small
+    从文献\cite[p]{Goldfarb_Idnani_1983}中看得，由于两次求导，$\alpha_{1k}, \, \alpha_{2k}$将都是零。这样整个成本函数就从\eqref{function:cost_Q_k1}简化成了\eqref{function:cost_Q_k2}，这在对矩阵初始化的时候很有意义因为非零项会被初始化成很小的数$\rho=10e^{-8}$，而恒零项就可以直接赋值为0。
 }
 \subsubsection{软最终约束\label{subsection:soft_final_constrants}}
 
@@ -144,8 +144,8 @@
 
 \section{等式约束}
 
-\textcolor{gray}{等式约束主要是从规划曲线段的连续性上出发的。}
-\textcolor{gray}{整体上就是要求曲线段的位置、速度、加速度前后连续。}
+\textcolor{gray}{\small
+    等式约束主要是从规划曲线段的连续性上出发的。整体上就是要求曲线段的位置、速度、加速度前后连续。}
 
 由于整个运动由一系列样条组成，我们设置运动优化问题以确保它们前后相连接。由于初始状态不能被运动规划器修改，我们设置了一个硬性等式约束，使得第一个样条$s_0$的初始状态与计划初始化中的一个集合重合。这个初始化的硬性等式约束可以写作$\mathbfit{p}(0)=\mathbfit{p}^r,\mathbfit{\dot p}(0)=\mathbfit{\dot p}^r,\mathbfit{\ddot p}(0)=\mathbfit{\ddot p}^r,$，于是有：
 \begin{align}
@@ -190,7 +190,8 @@
 
 \section{不等式约束}
 
-\textcolor{gray}{不等约束的主要内容就是将ZMP约束到支撑多边形内部。}
+\textcolor{gray}{\small
+    不等约束的主要内容就是将ZMP约束到支撑多边形内部。}
 
 如[11]和[19]所示，通过约束Zero-Moment Point(ZMP)位于支撑多边形内，可以保证运动过程中的平衡。从运动计划调用时使用计划脚的位置测量的脚配置开始，我们通过使用[5]中定义的接触时间表来计算一系列支持多边形及其持续时间。通过始终假设地面上至少有两只脚，四足机器人的支撑多边形可以是一条线、三角形或四边形。
 
@@ -207,11 +208,11 @@
 
 其中，$a,b,c$是经过支撑多边形各个边的直线方程的系数。这条针线的法向量是$\mathbfit{n}=[a,b]^T$，其方向定义为指向约束多边形内部。
 
-如\ref{subsection:cost_function}节所述，我们对运动的最终位置$\mathbfit{p}_f$施加了额外的不等式约束。这是通过在$\mathbfit{p}_f$上添加如公式\ref{function:zmp}形式的四个约束来获得的。
+如\ref{subsection:cost_function}节所述，我们对运动的最终位置$\mathbfit{p}_f$施加了额外的不等式约束。这是通过在$\mathbfit{p}_f$上添加如公式\eqref{function:zmp}形式的四个约束来获得的。
 
 
 \section{约束松弛}
-\textcolor{gray}{
+\textcolor{gray}{\small
 约束松弛主要涉及三个方面的处理：
 \begin{itemize}
     \item ZMP约束初始化的问题；
